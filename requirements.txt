@@ -1,1 +1,4 @@
 aiohttp
+aiohttp_jinja2
+wheel
+setuptools
