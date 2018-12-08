@@ -8,7 +8,36 @@
 </head>
 <body>
 <div class="container">
-<h1>Вычисление числа 𝛑 по разрядам</h1>
+	<div class="row">
+		<h1>Вычисление числа 𝛑 по разрядам</h1>
+	</div>
+	<div class="row">
+		<form class="form-group" method="post">
+			<button class="btn btn-primary">Рассчитать 1 разряд</button>
+		</form>
+	</div>
+	<div class="row">
+		{% if results_exists %}
+		<table class="table">
+			<thead>
+				<tr>
+					<th>Разряд</th>
+					<th>Число</th>
+				</tr>
+			</thead>
+			<tbody>
+				{% for result in results %}
+				<tr>
+					<td>{{ result.digit_number }}</td>
+					<td>{{ result.number }}</td>
+				</tr>
+				{% endfor %}
+			</tbody>
+		</table>
+		{% else %}
+		<p>Ни одного вычисления не выполнено. Нажмите кнопку "Рассчитать 1 разряд"</p>
+		{% endif %}
+	</div>
 </div>
 </body>
 </html>
