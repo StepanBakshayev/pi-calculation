@@ -1,6 +1,6 @@
 {% for item of results %}
 <tr>
-	<td>{{ item.digit_number }}</td>
+	<td><a href="/detail/{{ item.digit_number }}">{{ item.digit_number }}</a></td>
 	<td>
 		{% if item.step !== 'stored' %}{{ item.step }}{% endif %}
 		{% if item.result !== '' && item.step !== 'stored' %}: {% endif %}

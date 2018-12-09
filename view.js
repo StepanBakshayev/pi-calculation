@@ -97,8 +97,9 @@ function table_for0() {
   // Create elements
   var tr0 = document.createElement('tr');
   var td1 = document.createElement('td');
-  var text2 = document.createTextNode('');
-  var td3 = document.createElement('td');
+  var a2 = document.createElement('a');
+  var text3 = document.createTextNode('');
+  var td4 = document.createElement('td');
   var for0 = document.createComment('if');
   var child0 = {};
   var for1 = document.createComment('if');
@@ -107,17 +108,20 @@ function table_for0() {
   var child4 = {};
 
   // Construct dom
-  td1.appendChild(text2);
-  td3.appendChild(for0);
-  td3.appendChild(for1);
-  td3.appendChild(for2);
+  a2.appendChild(text3);
+  a2.setAttribute("href", "/detail/");
+  td1.appendChild(a2);
+  td4.appendChild(for0);
+  td4.appendChild(for1);
+  td4.appendChild(for2);
   tr0.appendChild(td1);
-  tr0.appendChild(td3);
+  tr0.appendChild(td4);
 
   // Update functions
   this.__update__ = {
     item: function (item) {
-      text2.textContent = item.digit_number;
+      text3.textContent = item.digit_number;
+      a2.setAttribute("href", ("/detail/") + (item.digit_number));;
       Monkberry.cond(_this, for0, child0, table_for0_if0, (item.step) !== ('stored'));
       Monkberry.cond(_this, for1, child2, table_for0_if2, ((item.result) !== ('')) && ((item.step) !== ('stored')));
       Monkberry.cond(_this, for2, child4, table_for0_if4, (item.result) !== (''));
