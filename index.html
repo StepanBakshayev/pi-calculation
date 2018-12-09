@@ -17,6 +17,14 @@
 		</form>
 	</div>
 	<div class="row">
+		Этапы вычисления:
+		<ol>
+			{% for step in Progress %}
+			<li class="list-inline-item">{{ step.name }}</li>
+			{% endfor %}
+		</ol>
+	</div>
+	<div class="row">
 		{% if results_exists %}
 		<table class="table">
 			<thead>
@@ -26,10 +34,14 @@
 				</tr>
 			</thead>
 			<tbody>
-				{% for result in results %}
+				{% for digit_number, step, result in results %}
 				<tr>
-					<td>{{ result.digit_number }}</td>
-					<td>{{ result.number }}</td>
+					<td>{{ digit_number }}</td>
+					<td>
+						{% if step != Progress.stored.value %}{{ Progress(step).name }}{% endif %}
+						{% if result is not none and step != Progress.stored.value %}: {% endif %}
+						{% if result is not none %}{{ result }}{% endif %}
+					</td>
 				</tr>
 				{% endfor %}
 			</tbody>
