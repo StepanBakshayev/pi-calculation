@@ -147,6 +147,8 @@ async def publisher(fire, websockets, engine):
 
 routes = web.RouteTableDef()
 routes.static('/bootstrap', ROOT_PATH/'node_modules'/'bootstrap'/'dist', name='bootstrap')
+routes.static('/monkberry', ROOT_PATH/'node_modules'/'monkberry', name='monkberry')
+routes.static('/static', ROOT_PATH, name='self')
 
 
 @aiohttp_jinja2.template('index.html')

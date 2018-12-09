@@ -1,0 +1,3 @@
+<form class="form-group" method="post">
+	<button class="btn btn-primary" name="next_digit_number" value="{{ next_digit_number }}">Рассчитать {{ next_digit_number }} разряд</button>
+</form>

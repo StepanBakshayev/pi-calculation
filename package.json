@@ -9,6 +9,7 @@
   "author": "",
   "license": "GPL-3.0-only",
   "dependencies": {
-    "bootstrap": "^4.1.3"
+    "bootstrap": "^4.1.3",
+    "monkberry": "^4.0.8"
   }
 }

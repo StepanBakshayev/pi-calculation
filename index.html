@@ -11,7 +11,7 @@
 	<div class="row">
 		<h1>Вычисление числа 𝛑 по разрядам</h1>
 	</div>
-	<div class="row">
+	<div class="row" id="control">
 		<form class="form-group" method="post">
 			<button class="btn btn-primary" name="next_digit_number" value="{{ next_digit_number }}">Рассчитать {{ next_digit_number }} разряд</button>
 		</form>
@@ -33,7 +33,7 @@
 					<th>Число</th>
 				</tr>
 			</thead>
-			<tbody>
+			<tbody id="table">
 				{% for digit_number, step, result in results %}
 				<tr>
 					<td>{{ digit_number }}</td>
@@ -51,5 +51,8 @@
 		{% endif %}
 	</div>
 </div>
+<script src="{{ url('monkberry', filename='/monkberry.js') }}"></script>
+<script src="{{ url('self', filename='/view.js') }}"></script>
+<script src="{{ url('self', filename='/life.js') }}" async></script>
 </body>
 </html>

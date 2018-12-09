@@ -1,0 +1,10 @@
+{% for item of results %}
+<tr>
+	<td>{{ item.digit_number }}</td>
+	<td>
+		{% if item.step !== 'stored' %}{{ item.step }}{% endif %}
+		{% if item.result !== '' && item.step !== 'stored' %}: {% endif %}
+		{% if item.result !== '' %}{{ item.result }}{% endif %}
+	</td>
+</tr>
+{% endfor %}
