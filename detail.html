@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>Вычисление числа 𝛑 по разрядам</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+	<link rel="stylesheet" href="{{ url('bootstrap', filename='/css/bootstrap.css') }}">
+</head>
+<body>
+<div class="container">
+	<div class="row">
+		<h1><a href="{{ url('index') }}">Вычисление числа 𝛑 по разрядам</a></h1>
+	</div>
+	<div class="row">
+		<h2>Разряд {{ digit_number }}</h2>
+	</div>
+		<p>{% if step != Progress.stored.value %}{{ Progress(step).name }}{% endif %}
+						{% if result is not none and step != Progress.stored.value %}: {% endif %}
+						{% if result is not none %}{{ result }}{% endif %}</p>
+</div>
+</body>
+</html>

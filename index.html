@@ -37,7 +37,7 @@
 			<tbody id="table">
 				{% for digit_number, step, result in results %}
 				<tr>
-					<td>{{ digit_number }}</td>
+					<td><a href="{{ url('detail', digit_number=digit_number) }}">{{ digit_number }}</a></td>
 					<td>
 						{% if step != Progress.stored.value %}{{ Progress(step).name }}{% endif %}
 						{% if result is not none and step != Progress.stored.value %}: {% endif %}

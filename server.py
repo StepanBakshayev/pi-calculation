@@ -259,6 +259,28 @@ async def run(request):
 	return web.Response(text='')
 
 
+@routes.get('/detail/{digit_number}', name='detail')
+@aiohttp_jinja2.template('detail.html')
+async def detail(request):
+	session = request.app['session']
+	results = (session
+		.query(DigitNumber.digit_number, Event.progress, Event.result)
+		.join(Event)
+		.group_by(DigitNumber)
+		.order_by(-DigitNumber.digit_number, -Event.progress)
+		.filter(DigitNumber.digit_number==request.match_info['digit_number'])
+		[:1])
+
+	if not results:
+		raise web.HTTPNotFound()
+
+	return {
+		'digit_number': results[0][0],
+		'step': results[0][1],
+		'result': results[0][2],
+		'Progress': Progress}
+
+
 async def subscribe(request):
 	ws = web.WebSocketResponse()
 	await ws.prepare(request)
@@ -302,7 +324,7 @@ def main():
 
 	app = web.Application()
 	app.add_routes(routes)
-	app.router.add_route('*', '/', index)
+	app.router.add_route('*', '/', index, name='index')
 	app.add_routes([web.get('/subscribe', subscribe)])
 	app['session'] = Session()
 	app['task_queue'] = task_queue
@@ -311,11 +333,12 @@ def main():
 	app.on_shutdown.append(on_shutdown)
 	#app.on_shutdown.append(async lambda app: publisher_task.cancel()) #XXX: How to cancel task?
 
-	with (ROOT_PATH / 'index.html').open('rt') as source:
+	with (ROOT_PATH / 'index.html').open('rt') as index_html, (ROOT_PATH / 'detail.html').open('rt') as detail_html:
 		aiohttp_jinja2.setup(
 			app,
 			loader=jinja2.DictLoader({
-				'index.html': source.read()}))
+				'index.html': index_html.read(),
+				'detail.html': detail_html.read()}))
 
 	try:
 		web.run_app(app)
