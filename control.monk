@@ -1,3 +1,4 @@
-<form class="form-group" method="post">
-	<button class="btn btn-primary" name="next_digit_number" value="{{ next_digit_number }}">Рассчитать {{ next_digit_number }} разряд</button>
+<form class="form-group" method="post" content="multipart/form-data">
+	<input type="hidden" name="next_digit_number" value="{{ next_digit_number }}">
+	<button class="btn btn-primary">Рассчитать {{ next_digit_number }} разряд</button>
 </form>

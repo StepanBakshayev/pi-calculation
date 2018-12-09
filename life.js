@@ -36,7 +36,7 @@
 		for (const item of results)
 			if (item.result === null)
 				item.result = ''
-		const next_digit_number = results[0].digit_number
+		const next_digit_number = results[0].digit_number + 1
 		controlView.update({'next_digit_number': next_digit_number})
 		tableView.update({'results': results})}
 
@@ -44,5 +44,21 @@
 	domready.then(function () {
 		const ws = new WebSocket("ws://localhost:8080/subscribe");
 		ws.addEventListener('message', renderTemplate)})
+
+
+	function run(event) {
+		const target = event.target
+		if (!'parentElement' in target || !target.parentElement.matches('#control'))
+			return;
+		event.preventDefault()
+		const request = new Request('/run', {
+			method: 'POST',
+			headers: new Headers({
+				'X-REQUESTED-WITH': 'XMLHttpRequest'}),
+			credentials: 'same-origin',
+			body: new FormData(target)})
+		fetch(request)
+	}
+	document.body.addEventListener('submit', run)
 
 })()

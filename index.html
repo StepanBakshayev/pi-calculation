@@ -12,8 +12,9 @@
 		<h1>Вычисление числа 𝛑 по разрядам</h1>
 	</div>
 	<div class="row" id="control">
-		<form class="form-group" method="post">
-			<button class="btn btn-primary" name="next_digit_number" value="{{ next_digit_number }}">Рассчитать {{ next_digit_number }} разряд</button>
+		<form class="form-group" method="post" content="multipart/form-data">
+			<input type="hidden" name="next_digit_number" value="{{ next_digit_number }}">
+			<button class="btn btn-primary">Рассчитать {{ next_digit_number }} разряд</button>
 		</form>
 	</div>
 	<div class="row">

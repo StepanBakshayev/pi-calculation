@@ -211,6 +211,54 @@ async def index(request):
 		'Progress': Progress}
 
 
+@routes.post('/run')
+async def run(request):
+	session = request.app['session']
+	fire = request.app['fire']
+	results = (session
+		.query(DigitNumber.digit_number)
+		.order_by(-DigitNumber.digit_number)
+		[:1])
+	next_digit_number = 1
+	if results:
+		next_digit_number = results[0][0] + 1
+
+	data = await request.post()
+	request_digit_number = None
+	try:
+		request_digit_number = int(data['next_digit_number'])
+	except ValueError:
+		pass
+
+	if request_digit_number is not None and request_digit_number >= next_digit_number:
+		session.add(DigitNumber(digit_number=request_digit_number))
+		session.add(Event(
+			digit_number=request_digit_number,
+			progress=Progress.registered.value))
+
+		try:
+			session.commit()
+			fire.set()
+		except IntegrityError:
+			session.rollback()
+
+		else:
+			try:
+				request.app['task_queue'].put(request_digit_number, timeout=1)
+				scheduled_error = None
+			except Exception as e:
+				scheduled_error = repr(e)
+
+			session.add(Event(
+				digit_number=request_digit_number,
+				progress=Progress.scheduled.value,
+				result=scheduled_error))
+			session.commit()
+			fire.set()
+
+	return web.Response(text='')
+
+
 async def subscribe(request):
 	ws = web.WebSocketResponse()
 	await ws.prepare(request)
@@ -234,7 +282,7 @@ async def on_shutdown(app):
 def main():
 	logging.basicConfig(level=logging.DEBUG)
 
-	engine = create_engine('sqlite:///{!s}'.format(ROOT_PATH/'db.sqlite3'), echo=True)
+	engine = create_engine('sqlite:///{!s}'.format(ROOT_PATH/'db.sqlite3'))
 	Base.metadata.create_all(engine)
 
 	Session = sessionmaker()
