@@ -242,7 +242,7 @@ def main():
 	fire = multiprocessing.Event()
 	workers = []
 	for _ in range(cpu_count()):
-		background = Process(target=worker, args=(task_queue, engine, fire))
+		background = Process(target=worker, args=(task_queue, engine, fire), daemon=True)
 		background.start()
 		workers.append(background)
 
