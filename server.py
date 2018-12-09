@@ -1,15 +1,16 @@
 import logging
-import signal
+from decimal import Decimal, getcontext
 from itertools import chain
-from multiprocessing import Pool, Process, Queue
+from math import factorial
+from multiprocessing import Process, Queue
 from pathlib import Path
-from queue import Empty
 
 import aiohttp_jinja2
 import jinja2
 from aiohttp import web
 from sqlalchemy import create_engine, event, Column, Integer, String
 from sqlalchemy.engine import Engine
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
@@ -38,9 +39,22 @@ class Result(Base):
 		return 'Result(digit_number={self.digit_number!r}, number={self.number!r})'.format(self=self)
 
 
+# XXX: Copy-pasted from http://blog.recursiveprocess.com/2013/03/14/calculate-pi-with-python/
+def chudnovsky(n): #http://en.wikipedia.org/wiki/Chudnovsky_algorithm
+	getcontext().prec = n + 100
+	pi = Decimal(0)
+	k = 0
+	while k < n:
+		pi += (Decimal(-1)**k)*(Decimal(factorial(6*k))/((factorial(k)**3)*(factorial(3*k)))*(13591409+545140134*k)/(640320**(3*k)))
+		k += 1
+	pi = pi * Decimal(10005).sqrt()/4270934400
+	pi = pi**(-1)
+	return pi
+
+
 # XXX: WTF! Pool catch KeyboardInterrupt and block daemon
-def init_worker():
-	signal.signal(signal.SIGINT, signal.SIG_IGN)
+# def init_worker():
+# 	signal.signal(signal.SIGINT, signal.SIG_IGN)
 
 
 def daemon(task_queue, engine):
@@ -48,15 +62,24 @@ def daemon(task_queue, engine):
 	Session.configure(bind=engine)
 	session = Session()
 
-	with Pool(initializer=init_worker) as p:
-		while True:
-			try:
-				digit_number = task_queue.get()
-			except KeyboardInterrupt:
-				break
-			r = Result(digit_number=digit_number, number='NotImplemented')
-			session.add(r)
+	while True:
+		try:
+			digit_number = task_queue.get()
+		except KeyboardInterrupt:
+			break
+		template = '{{:.{:d}}}'.format(digit_number+1)
+		try:
+			number = template.format(chudnovsky(digit_number))
+		except Exception as e:
+			number = repr(e)
+		r = Result(digit_number=digit_number, number=number)
+		session.add(r)
+		try:
 			session.commit()
+			session.expunge_all()
+
+		except IntegrityError:
+			session.rollback()
 
 
 routes = web.RouteTableDef()
@@ -84,7 +107,10 @@ async def index(request):
 			pass
 
 		if request_digit_number is not None and request_digit_number >= next_digit_number:
-			request.app['task_queue'].put_nowait(request_digit_number)
+			try:
+				request.app['task_queue'].put(request_digit_number, timeout=1)
+			except Exception as e:
+				pass
 
 		raise web.HTTPFound(request.path)
 
