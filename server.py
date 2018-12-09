@@ -1,4 +1,9 @@
+import asyncio
+import json
 import logging
+import multiprocessing
+import weakref
+from asyncio import sleep
 from decimal import Decimal, getcontext
 from enum import Enum
 from itertools import chain
@@ -8,7 +13,8 @@ from pathlib import Path
 
 import aiohttp_jinja2
 import jinja2
-from aiohttp import web
+from aiohttp import web, WSCloseCode
+from functools import partial
 from sqlalchemy import create_engine, event, Column, types, UniqueConstraint, Index, ForeignKey
 from sqlalchemy.engine import Engine
 from sqlalchemy.exc import IntegrityError
@@ -66,7 +72,7 @@ def chudnovsky(n): #http://en.wikipedia.org/wiki/Chudnovsky_algorithm
 	return pi
 
 
-def worker(task_queue, engine):
+def worker(task_queue, engine, fire):
 	Session = sessionmaker()
 	Session.configure(bind=engine)
 	session = Session()
@@ -82,6 +88,7 @@ def worker(task_queue, engine):
 			progress=Progress.taken.value))
 		try:
 			session.commit()
+			fire.set()
 		except IntegrityError:
 			session.rollback()
 			continue
@@ -97,14 +104,45 @@ def worker(task_queue, engine):
 			digit_number=digit_number,
 			progress=Progress.calculated.value,
 			result=calculated_error))
+		session.commit()
+		fire.set()
 
 		if calculated_error is None:
 			session.add(Event(
 				digit_number=digit_number,
 				progress=Progress.stored.value,
 				result=number))
+			session.commit()
+			fire.set()
 
-		session.commit()
+
+async def publisher(fire, websockets, engine):
+	Session = sessionmaker()
+	Session.configure(bind=engine)
+	session = Session()
+
+	while True:
+		if not fire.is_set():
+			await sleep(1)
+			continue
+
+		fire.clear()
+		results_query = (session
+			.query(DigitNumber.digit_number, Event.progress, Event.result)
+			.join(Event)
+			.group_by(DigitNumber)
+			.order_by(-DigitNumber.digit_number, -Event.progress))
+
+		results = []
+		for digit_number, step, result in results_query:
+			results.append({
+				'digit_number': digit_number,
+				'step': Progress(step).name,
+				'result': result})
+		dump = json.dumps(results)
+
+		for ws in set(websockets):
+			await ws.send_str(dump)
 
 
 routes = web.RouteTableDef()
@@ -114,6 +152,7 @@ routes.static('/bootstrap', ROOT_PATH/'node_modules'/'bootstrap'/'dist', name='b
 @aiohttp_jinja2.template('index.html')
 async def index(request):
 	session = request.app['session']
+	fire = request.app['fire']
 	results = (session
 		.query(DigitNumber.digit_number, Event.progress, Event.result)
 		.join(Event)
@@ -143,6 +182,7 @@ async def index(request):
 
 			try:
 				session.commit()
+				fire.set()
 			except IntegrityError:
 				session.rollback()
 
@@ -158,6 +198,7 @@ async def index(request):
 					progress=Progress.scheduled.value,
 					result=scheduled_error))
 				session.commit()
+				fire.set()
 
 		raise web.HTTPFound(request.path)
 
@@ -166,6 +207,26 @@ async def index(request):
 		'results_exists': results_exists,
 		'results': results,
 		'Progress': Progress}
+
+
+async def subscribe(request):
+	ws = web.WebSocketResponse()
+	await ws.prepare(request)
+
+	request.app['websockets'].add(ws)
+	try:
+		async for _ in ws:
+			pass
+	finally:
+		request.app['websockets'].discard(ws)
+
+	return ws
+
+
+async def on_shutdown(app):
+	for ws in set(app['websockets']):
+		await ws.close(
+			code=WSCloseCode.GOING_AWAY)
 
 
 def main():
@@ -178,17 +239,27 @@ def main():
 	Session.configure(bind=engine)
 
 	task_queue = Queue()
+	fire = multiprocessing.Event()
 	workers = []
 	for _ in range(cpu_count()):
-		background = Process(target=worker, args=(task_queue, engine))
+		background = Process(target=worker, args=(task_queue, engine, fire))
 		background.start()
 		workers.append(background)
+
+	websockets = weakref.WeakSet()
+	loop = asyncio.get_event_loop()
+	publisher_task = loop.create_task(publisher(fire, websockets, engine))
 
 	app = web.Application()
 	app.add_routes(routes)
 	app.router.add_route('*', '/', index)
+	app.add_routes([web.get('/subscribe', subscribe)])
 	app['session'] = Session()
 	app['task_queue'] = task_queue
+	app['fire'] = fire
+	app['websockets'] = websockets
+	app.on_shutdown.append(on_shutdown)
+	#app.on_shutdown.append(async lambda app: publisher_task.cancel()) #XXX: How to cancel task?
 
 	with (ROOT_PATH / 'index.html').open('rt') as source:
 		aiohttp_jinja2.setup(
