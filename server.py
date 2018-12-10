@@ -123,7 +123,7 @@ async def publisher(fire, websockets, engine):
 
 	while True:
 		if not fire.is_set():
-			await sleep(0)
+			await sleep(16/1000)
 			continue
 
 		fire.clear()
