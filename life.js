@@ -4,9 +4,7 @@
 	let domready = Promise.resolve()
 	if (document.readyState === 'loading') {
 		domready = new Promise(function (resolve, reject) {
-			document.addEventListener('DOMContentLoaded', resolve)
-		})
-	}
+			document.addEventListener('DOMContentLoaded', resolve)})}
 
 
 	function onmessage(controlView, tableView, event) {
@@ -42,6 +40,11 @@
 
 
 	domready.then(function () {
+		// XXX: Last second hack. There is no table for empty database
+		if (document.getElementById('table') === null) {
+			document.body.removeEventListener('submit', run)
+			return}
+
 		const ws = new WebSocket("ws://localhost:8080/subscribe");
 		ws.addEventListener('message', renderTemplate)})
 
@@ -57,8 +60,8 @@
 				'X-REQUESTED-WITH': 'XMLHttpRequest'}),
 			credentials: 'same-origin',
 			body: new FormData(target)})
-		fetch(request)
-	}
+		fetch(request)}
+
 	document.body.addEventListener('submit', run)
 
 })()
