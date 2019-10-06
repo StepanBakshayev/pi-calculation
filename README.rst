@@ -29,7 +29,7 @@
    $ . venv/bin/activate
    $ pip install -U pip wheel setuptools
    $ pip install -U -r freeze.txt
-   $ npm install
+   $ yarn install
    $ python server.py
 
 Открыть `веб-приложение <http://127.0.0.1:8080/>`_.
