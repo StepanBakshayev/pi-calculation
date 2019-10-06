@@ -1,6 +1,7 @@
-import './view.js'
+import Monkberry from './node_modules/monkberry/monkberry.js'
+import control from './control.js'
+import table from './table.js'
 
-'use strict'
 
 let domready = Promise.resolve()
 if (document.readyState === 'loading') {
