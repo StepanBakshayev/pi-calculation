@@ -30,6 +30,7 @@
    $ pip install -U pip wheel setuptools pipenv
    $ pipenv sync
    $ yarn install
+   $ npm run build
    $ python server.py
 
 Открыть `веб-приложение <http://127.0.0.1:8080/>`_.
