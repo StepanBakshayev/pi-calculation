@@ -23,12 +23,12 @@
 
 .. code-block:: sh
 
-   $ aria2c -j 5 -x 5 http://buildbot.pypy.org/nightly/py3.5/pypy-c-jit-95404-ce637db93b36-linux64.tar.bz2
-   $ tar -xvf pypy-c-jit-95404-ce637db93b36-linux64.tar.bz2
-   $ pypy-c-jit-95404-ce637db93b36-linux64/bin/pypy3 -m venv venv
+   $ aria2c -j 5 -x 5 http://buildbot.pypy.org/nightly/py3.6/pypy-c-jit-97722-6e344fc026c3-linux64.tar.bz2
+   $ tar -xvf pypy-c-jit-97722-6e344fc026c3-linux64.tar.bz2
+   $ pypy-c-jit-97722-6e344fc026c3-linux64/bin/pypy3 -m venv venv
    $ . venv/bin/activate
-   $ pip install -U pip wheel setuptools
-   $ pip install -U -r freeze.txt
+   $ pip install -U pip wheel setuptools pipenv
+   $ pipenv sync
    $ yarn install
    $ python server.py
 
