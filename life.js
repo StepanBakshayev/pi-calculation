@@ -1,6 +1,6 @@
 import Monkberry from './node_modules/monkberry/monkberry.js'
-import control from './control.js'
-import table from './table.js'
+import control from './control.monk'
+import table from './table.monk'
 
 
 let domready = Promise.resolve()
