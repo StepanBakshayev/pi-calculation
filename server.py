@@ -256,7 +256,7 @@ async def run(request):
 			session.commit()
 			fire.set()
 
-	return web.Response(text='')
+	return web.Response(text='OK')
 
 
 @routes.get('/detail/{digit_number}', name='detail')
@@ -299,6 +299,15 @@ async def on_shutdown(app):
 	for ws in set(app['websockets']):
 		await ws.close(
 			code=WSCloseCode.GOING_AWAY)
+
+
+def fill_queue_with_stalled_tasks(session, task_queue):
+	results = (session
+		.query(DigitNumber.digit_number, Event.progress, Event.result)
+		.join(Event)
+		.group_by(DigitNumber)
+		.order_by(-DigitNumber.digit_number, -Event.progress)
+		.filter(DigitNumber.digit_number==request.match_info['digit_number']))
 
 
 def main():
