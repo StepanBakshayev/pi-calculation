@@ -72,7 +72,7 @@ def chudnovsky(n): #http://en.wikipedia.org/wiki/Chudnovsky_algorithm
 	return pi
 
 
-def worker(task_queue, engine, fire):
+def worker(task_queue, engine, database_updated):
 	Session = sessionmaker()
 	Session.configure(bind=engine)
 	session = Session()
@@ -80,7 +80,7 @@ def worker(task_queue, engine, fire):
 	while True:
 		try:
 			digit_number = task_queue.get()
-		except Exception:
+		except (Exception, KeyboardInterrupt):
 			break
 
 		session.add(Event(
@@ -88,7 +88,7 @@ def worker(task_queue, engine, fire):
 			progress=Progress.taken.value))
 		try:
 			session.commit()
-			fire.set()
+			database_updated.set()
 		except IntegrityError:
 			session.rollback()
 			continue
@@ -105,7 +105,7 @@ def worker(task_queue, engine, fire):
 			progress=Progress.calculated.value,
 			result=calculated_error))
 		session.commit()
-		fire.set()
+		database_updated.set()
 
 		if calculated_error is None:
 			session.add(Event(
@@ -113,20 +113,20 @@ def worker(task_queue, engine, fire):
 				progress=Progress.stored.value,
 				result=number))
 			session.commit()
-			fire.set()
+			database_updated.set()
 
 
-async def publisher(fire, websockets, engine):
+async def publisher(database_updated, websockets, engine):
 	Session = sessionmaker()
 	Session.configure(bind=engine)
 	session = Session()
 
 	while True:
-		if not fire.is_set():
+		if not database_updated.is_set():
 			await sleep(16/1000)
 			continue
 
-		fire.clear()
+		database_updated.clear()
 		results_query = (session
 			.query(DigitNumber.digit_number, Event.progress, Event.result)
 			.join(Event)
@@ -155,7 +155,7 @@ routes.static('/static', ROOT_PATH, name='self')
 @aiohttp_jinja2.template('index.html')
 async def index(request):
 	session = request.app['session']
-	fire = request.app['fire']
+	database_updated = request.app['database_updated']
 	results = (session
 		.query(DigitNumber.digit_number, Event.progress, Event.result)
 		.join(Event)
@@ -186,7 +186,7 @@ async def index(request):
 
 			try:
 				session.commit()
-				fire.set()
+				database_updated.set()
 			except IntegrityError:
 				session.rollback()
 
@@ -202,7 +202,7 @@ async def index(request):
 					progress=Progress.scheduled.value,
 					result=scheduled_error))
 				session.commit()
-				fire.set()
+				database_updated.set()
 
 		raise web.HTTPFound(request.path)
 
@@ -216,7 +216,7 @@ async def index(request):
 @routes.post('/run')
 async def run(request):
 	session = request.app['session']
-	fire = request.app['fire']
+	database_updated = request.app['database_updated']
 	results = (session
 		.query(DigitNumber.digit_number)
 		.order_by(-DigitNumber.digit_number)
@@ -240,7 +240,7 @@ async def run(request):
 
 		try:
 			session.commit()
-			fire.set()
+			database_updated.set()
 		except IntegrityError:
 			session.rollback()
 
@@ -256,7 +256,7 @@ async def run(request):
 				progress=Progress.scheduled.value,
 				result=scheduled_error))
 			session.commit()
-			fire.set()
+			database_updated.set()
 
 	return web.Response(text='OK')
 
@@ -314,16 +314,16 @@ def main():
 	Session.configure(bind=engine)
 
 	task_queue = Queue()
-	fire = multiprocessing.Event()
+	database_updated = multiprocessing.Event()
 	workers = []
 	for _ in range(cpu_count()):
-		background = Process(target=worker, args=(task_queue, engine, fire), daemon=True)
+		background = Process(target=worker, args=(task_queue, engine, database_updated), daemon=True)
 		background.start()
 		workers.append(background)
 
 	websockets = weakref.WeakSet()
 	loop = asyncio.get_event_loop()
-	publisher_task = loop.create_task(publisher(fire, websockets, engine))
+	publisher_task = loop.create_task(publisher(database_updated, websockets, engine))
 
 	app = web.Application()
 	app.add_routes(routes)
@@ -331,7 +331,7 @@ def main():
 	app.add_routes([web.get('/subscribe', subscribe)])
 	app['session'] = Session()
 	app['task_queue'] = task_queue
-	app['fire'] = fire
+	app['database_updated'] = database_updated
 	app['websockets'] = websockets
 	app.on_shutdown.append(on_shutdown)
 	#app.on_shutdown.append(async lambda app: publisher_task.cancel()) #XXX: How to cancel task?
