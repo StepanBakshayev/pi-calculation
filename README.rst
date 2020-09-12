@@ -22,10 +22,10 @@
 
 .. code-block:: sh
 
-   $ aria2c -j 5 -x 5 http://buildbot.pypy.org/nightly/release-pypy3.6-v7.x/pypy-c-jit-100263-3d817608d63b-linux64.tar.bz2
-   $ tar -xvf pypy-c-jit-100263-3d817608d63b-linux64.tar.bz2
-   $ pypy-c-jit-100263-3d817608d63b-linux64/bin/pypy3 -m venv venv3.6
-   $ . venv3.6/bin/activate
+   $ aria2c -j 5 -x 5 http://buildbot.pypy.org/nightly/py3.7/pypy-c-jit-100194-4b803dfae562-linux64.tar.bz2
+   $ tar -xvf pypy-c-jit-100194-4b803dfae562-linux64.tar.bz2
+   $ pypy-c-jit-100194-4b803dfae562-linux64/bin/pypy3 -m venv venv3.7
+   $ . venv3.7/bin/activate
    $ pip install -U pip wheel setuptools poetry
    $ poetry install
    $ npm install
