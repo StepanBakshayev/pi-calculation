@@ -15,7 +15,7 @@ import aiohttp_jinja2
 import jinja2
 from aiohttp import web, WSCloseCode
 from functools import partial
-from sqlalchemy import create_engine, event, Column, types, UniqueConstraint, Index, ForeignKey
+from sqlalchemy import create_engine, event, Column, types, UniqueConstraint, Index, ForeignKey, func
 from sqlalchemy.engine import Engine
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.declarative import declarative_base
@@ -131,7 +131,8 @@ async def publisher(fire, websockets, engine):
 			.query(DigitNumber.digit_number, Event.progress, Event.result)
 			.join(Event)
 			.group_by(DigitNumber)
-			.order_by(-DigitNumber.digit_number, -Event.progress))
+			.having(Event.progress == func.MAX(Event.progress))
+			.order_by(-DigitNumber.digit_number))
 
 		results = []
 		for digit_number, step, result in results_query:
@@ -159,7 +160,8 @@ async def index(request):
 		.query(DigitNumber.digit_number, Event.progress, Event.result)
 		.join(Event)
 		.group_by(DigitNumber)
-		.order_by(-DigitNumber.digit_number, -Event.progress))
+		.having(Event.progress == func.MAX(Event.progress))
+		.order_by(-DigitNumber.digit_number))
 	results_exists = session.query(results.exists()).scalar()
 	next_digit_number = 1
 	if results_exists:
@@ -267,7 +269,8 @@ async def detail(request):
 		.query(DigitNumber.digit_number, Event.progress, Event.result)
 		.join(Event)
 		.group_by(DigitNumber)
-		.order_by(-DigitNumber.digit_number, -Event.progress)
+		.having(Event.progress == func.MAX(Event.progress))
+		.order_by(-DigitNumber.digit_number)
 		.filter(DigitNumber.digit_number==request.match_info['digit_number'])
 		[:1])
 
@@ -299,15 +302,6 @@ async def on_shutdown(app):
 	for ws in set(app['websockets']):
 		await ws.close(
 			code=WSCloseCode.GOING_AWAY)
-
-
-def fill_queue_with_stalled_tasks(session, task_queue):
-	results = (session
-		.query(DigitNumber.digit_number, Event.progress, Event.result)
-		.join(Event)
-		.group_by(DigitNumber)
-		.order_by(-DigitNumber.digit_number, -Event.progress)
-		.filter(DigitNumber.digit_number==request.match_info['digit_number']))
 
 
 def main():

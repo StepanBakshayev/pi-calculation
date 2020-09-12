@@ -47,7 +47,7 @@ domready.then(function () {
 		document.body.removeEventListener('submit', run)
 		return}
 
-	const ws = new WebSocket("ws://localhost:8080/subscribe");
+	const ws = new WebSocket(`ws://${document.location.host}/subscribe`);
 	ws.addEventListener('message', renderTemplate)})
 
 
