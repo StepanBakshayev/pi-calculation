@@ -80,7 +80,7 @@ def worker(task_queue, engine, fire):
 	while True:
 		try:
 			digit_number = task_queue.get()
-		except KeyboardInterrupt:
+		except Exception:
 			break
 
 		session.add(Event(
@@ -350,13 +350,15 @@ def main():
 				'detail.html': detail_html.read()}))
 
 	try:
-		web.run_app(app)
+		web.run_app(app, port=50594)
 
 	finally:
 		task_queue.close()
-		task_queue.join_thread()
+		for background in workers:
+			background.terminate()
 		for background in workers:
 			background.join()
+		task_queue.join_thread()
 
 
 if __name__ == '__main__':
